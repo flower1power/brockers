@@ -4,7 +4,6 @@ on:
   - push
   - pull_request
 
-
 env:
   BASE_URL_API: ${{secrets.BASE_URL_API}}
   KAFKA_PRODUCER: ${{secrets.KAFKA_PRODUCER}}
