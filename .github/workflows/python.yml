@@ -1,17 +1,10 @@
 name: Python Tests
 
-on:
-  - push
-  - pull_request
+on: [ push, pull_request ]
 
 env:
   BASE_URL_API: ${{secrets.BASE_URL_API}}
   KAFKA_PRODUCER: ${{secrets.KAFKA_PRODUCER}}
-
-permissions:
-  contents: read
-  packages: write
-  id-token: write
 
 jobs:
   test:
@@ -19,14 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          cache: "poetry"
 
       - name: Install Poetry
         run: pip install poetry
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Configure Poetry
         run: poetry config virtualenvs.create false
