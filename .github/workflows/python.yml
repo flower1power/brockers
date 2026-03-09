@@ -33,13 +33,5 @@ jobs:
         run: poetry install --no-interaction --no-root
 
       - name: Run tests
-        run: |
-          pytest ./tests --alluredir=allure-results --disable-warnings
+        run: pytest framework/tests
         continue-on-error: true
-
-      - name: Archive allure results
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: allure-results
-          retention-days: 1
