@@ -1,28 +1,29 @@
-import time
-import uuid
-
-from framework.internal.http.account import AccountApi
-from framework.internal.http.mail import MailApi
+from framework.internal.kafka.producer import Producer
+from framework.tests.conftest import account_helper
 
 
-def test_failed_registration(account: AccountApi, mail: MailApi) -> None:
-    expected_mail = "string@mail.ru"
-    account.register_user(login="string", email=expected_mail, password="string")
-    for _ in range(10):
-        response = mail.find_msg(query=expected_mail)
-        if response.json()["total"] > 0:
-            raise AssertionError("Email over found")
-        time.sleep(1)
+def test_failed_registration(account_helper) -> None:
+    account_helper.failed_register_user(login="string", email="string@mail.ru", password="string")
 
 
+def test_success_registration(prepare_user, account_helper) -> None:
+    user = prepare_user
+    account_helper.success_register_user(login=user["login"], email=user["email"], password=user["password"])
 
-def test_success_registration(account: AccountApi, mail: MailApi) -> None:
-    base = uuid.uuid4().hex
-    response = account.register_user(login=base, email=f"{base}@mail.ru", password="123123123")
-    for _ in range(10):
-        response = mail.find_msg(query=base)
-        if response.json()["total"] > 0:
-            break
-        time.sleep(1)
-    else:
-        raise AssertionError("Email not found")
+
+def test_success_registration_with_kafka(kafka_producer: Producer, prepare_user, account_helper) -> None:
+    msg = prepare_user
+    kafka_producer.send(topic="register-events", msg=msg)
+    account_helper.find_msg(msg["login"])
+
+
+def test_register_events_error_consumer(
+        kafka_producer: Producer,
+        prepare_error_validation,
+        account_helper
+) -> None:
+    msg = prepare_error_validation
+    kafka_producer.send(topic="register-events-errors", msg=msg)
+    account_helper.find_msg(msg["input_data"]["login"])
+    token = account_helper.get_activation_token_by_login(msg["input_data"]["login"])
+    account_helper.account_api.activate_user(token)
