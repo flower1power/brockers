@@ -1,16 +1,17 @@
 import json
 import threading
 from types import TracebackType
+from typing import Any
 
 from kafka import KafkaProducer
+from kafka.producer.future import RecordMetadata
 
 from framework.internal.singleton import Singleton
-from framework.settings.settings import KAFKA_PRODUCER
 
 
 class Producer(Singleton):
 
-    def __init__(self, bootstrap_servers: list[str] = [KAFKA_PRODUCER]):
+    def __init__(self, bootstrap_servers: list[str]):
         self._bootstrap_servers = bootstrap_servers
         self._producer: KafkaProducer | None = None
         self._lock: threading.Lock = threading.Lock()
@@ -33,17 +34,16 @@ class Producer(Singleton):
             self._producer.close()
             self._producer = None
 
-    def send(self, topic: str, msg: dict[str, str]) -> None:
+    def send(self, topic: str, msg: dict[Any, Any]) -> RecordMetadata:
         if not self._producer:
             raise RuntimeError("Producer is not started")
 
         try:
             with self._lock:
                 future = self._producer.send(topic=topic, value=msg)
-                record_metadata = future.get(timeout=10)
-                return record_metadata
+                return future.get(timeout=10)
         except Exception as e:
-            raise RuntimeError(f"Failed to send message to kafka {e}")
+            raise RuntimeError(f"Failed to send message to kafka: {e}")
 
     def __enter__(self) -> "Producer":
         self.start()

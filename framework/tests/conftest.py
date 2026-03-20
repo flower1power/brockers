@@ -12,7 +12,7 @@ from framework.internal.http.models.ErrorMessage import ErrorMessage
 from framework.internal.http.models.UserPayload import UserPayload
 from framework.internal.kafka.consumer import Consumer
 from framework.internal.kafka.producer import Producer
-from framework.settings.settings import BASE_URL_API
+from framework.settings.settings import BASE_URL_API, KAFKA_PRODUCER
 
 
 @pytest.fixture(scope="session")
@@ -32,7 +32,7 @@ def account_helper(account: AccountApi, mail: MailApi) -> AccountHelper:
 
 @pytest.fixture(scope="session")
 def kafka_producer() -> Generator[Producer, None, None]:
-    with Producer() as producer:
+    with Producer([KAFKA_PRODUCER]) as producer:
         yield producer
 
 
@@ -51,7 +51,10 @@ def kafka_consumer(
         register_events_subscriber: RegisterEventsSubscribers,
         register_events_error_subscriber: RegisterEventsErrorsSubscribers
 ) -> Generator[Consumer, None, None]:
-    with Consumer(subscribers=[register_events_subscriber, register_events_error_subscriber]) as consumer:
+    with Consumer(
+            subscribers=[register_events_subscriber, register_events_error_subscriber],
+            bootstrap_servers=[KAFKA_PRODUCER]
+    ) as consumer:
         yield consumer
 
 

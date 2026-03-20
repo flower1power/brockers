@@ -7,13 +7,12 @@ from kafka import KafkaConsumer
 
 from framework.internal.kafka.subscriber import Subscriber
 from framework.internal.singleton import Singleton
-from framework.settings.settings import KAFKA_PRODUCER
 
 
 class Consumer(Singleton):
     _started: bool = False
 
-    def __init__(self, subscribers: list[Subscriber], bootstrap_servers: list[str] = [KAFKA_PRODUCER]):
+    def __init__(self, subscribers: list[Subscriber], bootstrap_servers: list[str]):
         self._bootstrap_servers = bootstrap_servers
         self._subscribers = subscribers
         self._consumer: KafkaConsumer | None = None

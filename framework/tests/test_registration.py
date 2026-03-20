@@ -1,6 +1,7 @@
 from framework.helpers.kafka.consumers.register_events import RegisterEventsSubscribers
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
 from framework.internal.kafka.producer import Producer
+from framework.settings.settings import TOPIC_REGISTER_EVENTS_ERRORS, TOPIC_REGISTER_EVENTS
 from framework.tests.conftest import account_helper
 
 
@@ -35,7 +36,7 @@ def test_success_registration(
 
 def test_success_registration_with_kafka(kafka_producer: Producer, prepare_user, account_helper) -> None:
     msg = prepare_user
-    kafka_producer.send(topic="register-events", msg=msg)
+    kafka_producer.send(topic=TOPIC_REGISTER_EVENTS, msg=msg)
     account_helper.find_msg(msg["login"])
 
 
@@ -45,7 +46,7 @@ def test_register_events_error_consumer(
         account_helper
 ) -> None:
     msg = prepare_error_validation
-    kafka_producer.send(topic="register-events-errors", msg=msg)
+    kafka_producer.send(topic=TOPIC_REGISTER_EVENTS_ERRORS, msg=msg)
     account_helper.find_msg(msg["input_data"]["login"])
     token = account_helper.get_activation_token_by_login(msg["input_data"]["login"])
     account_helper.account_api.activate_user(token)
@@ -53,7 +54,7 @@ def test_register_events_error_consumer(
 
 def test_success_registration_with_kafka_producer(kafka_producer: Producer, prepare_user) -> None:
     msg = prepare_user
-    kafka_producer.send(topic="register-events", msg=msg)
+    kafka_producer.send(topic=TOPIC_REGISTER_EVENTS, msg=msg)
 
 
 def test_success_registration_with_kafka_producer_consumer(
@@ -62,7 +63,7 @@ def test_success_registration_with_kafka_producer_consumer(
         kafka_producer: Producer
 ) -> None:
     msg = prepare_user
-    kafka_producer.send(topic="register-events", msg=msg)
+    kafka_producer.send(topic=TOPIC_REGISTER_EVENTS, msg=msg)
     for i in range(20):
         message = register_events_subscriber.get_message()
         if message.value["login"] == msg["login"]:
@@ -78,7 +79,7 @@ def test_validation_msg_register_events_errors(
 ) -> None:
     msg = prepare_error_msg_register_events_error
     login = msg["input_data"]["login"]
-    kafka_producer.send(topic="register-events-errors", msg=msg)
+    kafka_producer.send(topic=TOPIC_REGISTER_EVENTS_ERRORS, msg=msg)
 
     error_msg = register_events_error_subscriber.find_message(login=login, error_type="validation")
     assert error_msg.value["error_type"] == "validation"

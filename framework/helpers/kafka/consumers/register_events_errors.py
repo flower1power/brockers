@@ -1,8 +1,9 @@
 from framework.internal.kafka.subscriber import Subscriber
+from framework.settings.settings import TOPIC_REGISTER_EVENTS_ERRORS
 
 
 class RegisterEventsErrorsSubscribers(Subscriber):
-    topic: str = "register-events-errors"
+    topic: str = TOPIC_REGISTER_EVENTS_ERRORS
 
     def find_message(self, login: str, error_type: str | None = None):
         for i in range(10):
