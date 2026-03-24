@@ -1,10 +1,21 @@
-import os
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
-BASE_URL_API: str = os.getenv("BASE_URL_API")
-KAFKA_PRODUCER: str = os.getenv("KAFKA_PRODUCER")
-TOPIC_REGISTER_EVENTS = "register-events"
-TOPIC_REGISTER_EVENTS_ERRORS = "register-events-errors"
+    base_url_api: str = Field(..., description="REST API base URL for user registration/activation")
+    kafka_producer: str = Field(..., description="Kafka broker address")
+    topic_register_events: str = Field(default="register-events", description="Kafka topic for registration events")
+    topic_register_events_errors: str = Field(
+        default="register-events-errors", description="Kafka topic for registration error events"
+    )
+
+
+settings = Settings()

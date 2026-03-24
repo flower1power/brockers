@@ -6,11 +6,12 @@ authors = [
     {name = "Виктор Лобынцев",email = "sibfight@mail.ru"}
 ]
 requires-python = ">=3.13"
+package-mode = false
 dependencies = [
     "httpx (>=0.28.1,<0.29.0)",
     "pytest (>=9.0.2,<10.0.0)",
     "kafka-python (>=2.3.0,<3.0.0)",
-    "dotenv (>=0.9.9,<0.10.0)"
+    "pydantic-settings (>=2.7.0,<3.0.0)"
 ]
 
 

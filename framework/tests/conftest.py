@@ -6,23 +6,25 @@ import pytest
 from framework.helpers.account_helper import AccountHelper
 from framework.helpers.kafka.consumers.register_events import RegisterEventsSubscribers
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
+from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
+from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
 from framework.internal.http.account.account import AccountApi
 from framework.internal.http.mail.mail import MailApi
 from framework.internal.http.models.ErrorMessage import ErrorMessage
 from framework.internal.http.models.UserPayload import UserPayload
 from framework.internal.kafka.consumer import Consumer
 from framework.internal.kafka.producer import Producer
-from framework.settings.settings import BASE_URL_API, KAFKA_PRODUCER
+from framework.settings import settings
 
 
 @pytest.fixture(scope="session")
 def account() -> AccountApi:
-    return AccountApi(base_url=BASE_URL_API)
+    return AccountApi(base_url=settings.base_url_api)
 
 
 @pytest.fixture(scope="session")
 def mail() -> MailApi:
-    return MailApi(base_url=BASE_URL_API)
+    return MailApi(base_url=settings.base_url_api)
 
 
 @pytest.fixture
@@ -32,7 +34,7 @@ def account_helper(account: AccountApi, mail: MailApi) -> AccountHelper:
 
 @pytest.fixture(scope="session")
 def kafka_producer() -> Generator[Producer, None, None]:
-    with Producer([KAFKA_PRODUCER]) as producer:
+    with Producer([settings.kafka_producer]) as producer:
         yield producer
 
 
@@ -46,6 +48,16 @@ def register_events_error_subscriber() -> RegisterEventsErrorsSubscribers:
     return RegisterEventsErrorsSubscribers()
 
 
+@pytest.fixture(scope="session")
+def register_events_publisher(kafka_producer: Producer) -> RegisterEventsPublisher:
+    return RegisterEventsPublisher(kafka_producer)
+
+
+@pytest.fixture(scope="session")
+def register_events_errors_publisher(kafka_producer: Producer) -> RegisterEventsErrorsPublisher:
+    return RegisterEventsErrorsPublisher(kafka_producer)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def kafka_consumer(
         register_events_subscriber: RegisterEventsSubscribers,
@@ -53,7 +65,7 @@ def kafka_consumer(
 ) -> Generator[Consumer, None, None]:
     with Consumer(
             subscribers=[register_events_subscriber, register_events_error_subscriber],
-            bootstrap_servers=[KAFKA_PRODUCER]
+            bootstrap_servers=[settings.kafka_producer]
     ) as consumer:
         yield consumer
 
