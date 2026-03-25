@@ -5,6 +5,7 @@ on: [ push, workflow_dispatch ]
 env:
   BASE_URL_API: ${{secrets.BASE_URL_API}}
   KAFKA_PRODUCER: ${{secrets.KAFKA_PRODUCER}}
+  RMQ_PUBLISHER_URL: ${{secrets.RMQ_PUBLISHER_URL}}
 
 jobs:
   test:
