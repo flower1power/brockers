@@ -8,12 +8,15 @@ from framework.helpers.kafka.consumers.register_events import RegisterEventsSubs
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
 from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
 from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
+from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
 from framework.internal.http.account.account import AccountApi
 from framework.internal.http.mail.mail import MailApi
 from framework.internal.http.models.ErrorMessage import ErrorMessage
+from framework.internal.http.models.RmqMessageMailBody import RmqMessageMailBody
 from framework.internal.http.models.UserPayload import UserPayload
 from framework.internal.kafka.consumer import Consumer
 from framework.internal.kafka.producer import Producer
+from framework.internal.rmq.publisher import RmqPublisher
 from framework.settings import settings
 
 
@@ -36,6 +39,17 @@ def account_helper(account: AccountApi, mail: MailApi) -> AccountHelper:
 def kafka_producer() -> Generator[Producer, None, None]:
     with Producer([settings.kafka_producer]) as producer:
         yield producer
+
+
+@pytest.fixture(scope="session")
+def rmq_publisher() -> Generator[RmqPublisher, None, None]:
+    with RmqPublisher(settings.rmq_publisher_url) as rmq_publisher:
+        yield rmq_publisher
+
+
+@pytest.fixture(scope="session")
+def dm_mail_sending(rmq_publisher: RmqPublisher) -> DmMailSendingPublisher:
+    return DmMailSendingPublisher(rmq_publisher)
 
 
 @pytest.fixture(scope="session")
@@ -81,6 +95,16 @@ def prepare_user() -> UserPayload:
 
 
 @pytest.fixture
+def prepare_rmq_message_mail() -> RmqMessageMailBody:
+    address = f"{uuid.uuid4().hex}@mail.ru"
+    return {
+        "address": address,
+        "subject": "New message test",
+        "body": "New body test",
+    }
+
+
+@pytest.fixture
 def error_message_factory() -> Callable[[UserPayload, str], ErrorMessage]:
     def _create(user: UserPayload, error_type: str = "unknown") -> ErrorMessage:
         return {
@@ -99,7 +123,10 @@ def error_message_factory() -> Callable[[UserPayload, str], ErrorMessage]:
 
 
 @pytest.fixture
-def prepare_error_validation(prepare_user: UserPayload, error_message_factory) -> ErrorMessage:
+def prepare_error_validation(
+        prepare_user: UserPayload,
+        error_message_factory
+) -> ErrorMessage:
     return error_message_factory(prepare_user, "unknown")
 
 
