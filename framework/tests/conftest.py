@@ -8,6 +8,7 @@ from framework.helpers.kafka.consumers.register_events import RegisterEventsSubs
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
 from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
 from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
+from framework.helpers.rmq.consumers.dm_mail_sending import DmMailSendingConsumer
 from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
 from framework.internal.http.account.account import AccountApi
 from framework.internal.http.mail.mail import MailApi
@@ -48,7 +49,7 @@ def rmq_publisher() -> Generator[RmqPublisher, None, None]:
 
 
 @pytest.fixture(scope="session")
-def dm_mail_sending(rmq_publisher: RmqPublisher) -> DmMailSendingPublisher:
+def dm_mail_sending_publisher(rmq_publisher: RmqPublisher) -> DmMailSendingPublisher:
     return DmMailSendingPublisher(rmq_publisher)
 
 
@@ -81,6 +82,12 @@ def kafka_consumer(
             subscribers=[register_events_subscriber, register_events_error_subscriber],
             bootstrap_servers=[settings.kafka_producer]
     ) as consumer:
+        yield consumer
+
+
+@pytest.fixture(scope="session", autouse=True)
+def rmq_mail_sending_consumer() -> Generator[DmMailSendingConsumer, None, None]:
+    with DmMailSendingConsumer(settings.rmq_publisher_url) as consumer:
         yield consumer
 
 

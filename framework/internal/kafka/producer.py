@@ -16,6 +16,18 @@ class Producer(Singleton):
         self._producer: KafkaProducer | None = None
         self._lock: threading.Lock = threading.Lock()
 
+    def __enter__(self) -> "Producer":
+        self.start()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: type[BaseException],
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None
+    ) -> None:
+        self.stop()
+
     def start(self) -> None:
         self._producer = KafkaProducer(
             bootstrap_servers=self._bootstrap_servers,
@@ -44,15 +56,3 @@ class Producer(Singleton):
                 return future.get(timeout=10)
         except Exception as e:
             raise RuntimeError(f"Failed to send message to kafka: {e}")
-
-    def __enter__(self) -> "Producer":
-        self.start()
-        return self
-
-    def __exit__(
-            self,
-            exc_type: type[BaseException],
-            exc_val: BaseException | None,
-            exc_tb: TracebackType | None
-    ) -> None:
-        self.stop()

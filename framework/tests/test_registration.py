@@ -3,6 +3,7 @@ from framework.helpers.kafka.consumers.register_events import RegisterEventsSubs
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
 from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
 from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
+from framework.helpers.rmq.consumers.dm_mail_sending import DmMailSendingConsumer
 from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
 from framework.internal.http.models.ErrorMessage import ErrorMessage
 from framework.internal.http.models.RmqMessageMailBody import RmqMessageMailBody
@@ -19,21 +20,21 @@ def test_failed_registration_validation_error(
     password = "string"
 
     account_helper.register_user(login=login, email=email, password=password)
-
     register_events_subscriber.find_message(login=login)
-
     error_msg = register_events_error_subscriber.find_message(login=login, error_type="validation")
     assert error_msg.value["error_type"] == "validation"
 
 
 def test_success_registration(
         register_events_subscriber: RegisterEventsSubscribers,
+        rmq_mail_sending_consumer: DmMailSendingConsumer,
         account_helper: AccountHelper,
         prepare_user: UserPayload,
 ) -> None:
     user = prepare_user
     account_helper.register_user(login=user["login"], email=user["email"], password=user["password"])
     register_events_subscriber.find_message(user["login"])
+    rmq_mail_sending_consumer.find_message(user["login"])
     account_helper.find_msg(user["email"])
 
 
@@ -85,7 +86,7 @@ def test_success_registration_with_kafka_producer_consumer(
 def test_validation_msg_register_events_errors(
         register_events_error_subscriber: RegisterEventsErrorsSubscribers,
         register_events_errors_publisher: RegisterEventsErrorsPublisher,
-        prepare_error_msg_register_events_error
+        prepare_error_msg_register_events_error: ErrorMessage
 ) -> None:
     msg = prepare_error_msg_register_events_error
     login = msg["input_data"]["login"]
@@ -97,9 +98,9 @@ def test_validation_msg_register_events_errors(
 
 def test_rmq(
         prepare_rmq_message_mail: RmqMessageMailBody,
-        dm_mail_sending: DmMailSendingPublisher,
+        dm_mail_sending_publisher: DmMailSendingPublisher,
         account_helper: AccountHelper
 ) -> None:
     msg = prepare_rmq_message_mail
-    dm_mail_sending.publish(message=msg)
+    dm_mail_sending_publisher.publish(message=msg)
     account_helper.find_msg(msg["address"])

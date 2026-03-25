@@ -15,17 +15,6 @@ class RmqPublisher(Singleton):
         self._connection: BlockingConnection | None = None
         self._channel: BlockingChannel | None = None
 
-    def _start(self):
-        self._connection = pika.BlockingConnection(pika.URLParameters(self._url))
-        self._channel = self._connection.channel()
-
-    def _stop(self):
-        if self._channel is not None:
-            self._channel.close()
-
-        if self._connection is not None:
-            self._connection.close()
-
     def __enter__(self) -> "RmqPublisher":
         self._start()
         return self
@@ -37,6 +26,17 @@ class RmqPublisher(Singleton):
             exc_tb: TracebackType | None
     ):
         self._stop()
+
+    def _start(self):
+        self._connection = pika.BlockingConnection(pika.URLParameters(self._url))
+        self._channel = self._connection.channel()
+
+    def _stop(self):
+        if self._channel is not None:
+            self._channel.close()
+
+        if self._connection is not None:
+            self._connection.close()
 
     def publish(
             self,
