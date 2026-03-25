@@ -33,12 +33,15 @@ class AccountHelper:
         self.account_api = account_api
         self.mail_api = mail_api
 
+    def register_user(self, login: str, email: str, password: str):
+        return self.account_api.register_user(login=login, email=email, password=password)
+
     def success_register_user(self, login: str, email: str, password: str):
-        self.account_api.register_user(login=login, email=email, password=password)
+        self.register_user(login=login, email=email, password=password)
         self.find_msg(email)
 
     def failed_register_user(self, login: str, email: str, password: str):
-        self.account_api.register_user(login=login, email=email, password=password)
+        self.register_user(login=login, email=email, password=password)
         self.failed_find_msg(email)
 
     @retrier

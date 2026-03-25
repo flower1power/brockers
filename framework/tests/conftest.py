@@ -1,36 +1,73 @@
 import uuid
+from typing import Callable, Generator
 
 import pytest
 
 from framework.helpers.account_helper import AccountHelper
+from framework.helpers.kafka.consumers.register_events import RegisterEventsSubscribers
+from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
+from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
+from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
 from framework.internal.http.account.account import AccountApi
 from framework.internal.http.mail.mail import MailApi
 from framework.internal.http.models.ErrorMessage import ErrorMessage
 from framework.internal.http.models.UserPayload import UserPayload
+from framework.internal.kafka.consumer import Consumer
 from framework.internal.kafka.producer import Producer
-from framework.settings.settings import BASE_URL_API
+from framework.settings import settings
 
 
 @pytest.fixture(scope="session")
 def account() -> AccountApi:
-    return AccountApi(base_url=BASE_URL_API)
+    return AccountApi(base_url=settings.base_url_api)
 
 
 @pytest.fixture(scope="session")
 def mail() -> MailApi:
-    return MailApi(base_url=BASE_URL_API)
+    return MailApi(base_url=settings.base_url_api)
+
+
+@pytest.fixture
+def account_helper(account: AccountApi, mail: MailApi) -> AccountHelper:
+    return AccountHelper(account, mail)
 
 
 @pytest.fixture(scope="session")
-def kafka_producer() -> Producer:
-    with Producer() as producer:
+def kafka_producer() -> Generator[Producer, None, None]:
+    with Producer([settings.kafka_producer]) as producer:
         yield producer
 
 
-@pytest.fixture()
-def account_helper(account: AccountApi, mail: MailApi):
-    account_helper = AccountHelper(account, mail)
-    return account_helper
+@pytest.fixture(scope="session")
+def register_events_subscriber() -> RegisterEventsSubscribers:
+    return RegisterEventsSubscribers()
+
+
+@pytest.fixture(scope="session")
+def register_events_error_subscriber() -> RegisterEventsErrorsSubscribers:
+    return RegisterEventsErrorsSubscribers()
+
+
+@pytest.fixture(scope="session")
+def register_events_publisher(kafka_producer: Producer) -> RegisterEventsPublisher:
+    return RegisterEventsPublisher(kafka_producer)
+
+
+@pytest.fixture(scope="session")
+def register_events_errors_publisher(kafka_producer: Producer) -> RegisterEventsErrorsPublisher:
+    return RegisterEventsErrorsPublisher(kafka_producer)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def kafka_consumer(
+        register_events_subscriber: RegisterEventsSubscribers,
+        register_events_error_subscriber: RegisterEventsErrorsSubscribers
+) -> Generator[Consumer, None, None]:
+    with Consumer(
+            subscribers=[register_events_subscriber, register_events_error_subscriber],
+            bootstrap_servers=[settings.kafka_producer]
+    ) as consumer:
+        yield consumer
 
 
 @pytest.fixture
@@ -44,24 +81,33 @@ def prepare_user() -> UserPayload:
 
 
 @pytest.fixture
-def prepare_error_validation(prepare_user) -> ErrorMessage:
-    user_data = prepare_user
-    return {
-        "input_data": {
-            "login": user_data["login"],
-            "email": user_data["email"],
-            "password": user_data["password"]
-        },
-        "error_message": {
-            "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-            "title": "Validation failed",
-            "status": 400,
-            "traceId": "00-2bd2ede7c3e4dcf40c4b7a62ac23f448-839ff284720ea656-01",
-            "errors": {
-                "Email": [
-                    "Invalid"
-                ]
-            }
-        },
-        "error_type": "unknown"
+def error_message_factory() -> Callable[[UserPayload, str], ErrorMessage]:
+    def _create(user: UserPayload, error_type: str = "unknown") -> ErrorMessage:
+        return {
+            "input_data": user,
+            "error_message": {
+                "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                "title": "Validation failed",
+                "status": 400,
+                "traceId": f"00-{uuid.uuid4().hex}-01",
+                "errors": {"Email": ["Invalid"]}
+            },
+            "error_type": error_type
+        }
+
+    return _create
+
+
+@pytest.fixture
+def prepare_error_validation(prepare_user: UserPayload, error_message_factory) -> ErrorMessage:
+    return error_message_factory(prepare_user, "unknown")
+
+
+@pytest.fixture
+def prepare_error_msg_register_events_error(error_message_factory) -> ErrorMessage:
+    user: UserPayload = {
+        "login": "string1",
+        "email": "string1@mail.ru",
+        "password": "string1"
     }
+    return error_message_factory(user, "unknown")

@@ -1,6 +1,6 @@
 name: Python Tests
 
-on: [ push, pull_request ]
+on: [ push, workflow_dispatch ]
 
 env:
   BASE_URL_API: ${{secrets.BASE_URL_API}}
@@ -30,7 +30,7 @@ jobs:
         run: poetry config virtualenvs.create false
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root
+        run: poetry install --no-interaction
 
       - name: Run tests
         run: pytest framework/tests

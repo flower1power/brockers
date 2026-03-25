@@ -1,18 +1,16 @@
-[project]
+[tool.poetry]
 name = "brockers"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Виктор Лобынцев",email = "sibfight@mail.ru"}
-]
-requires-python = ">=3.13"
-dependencies = [
-    "httpx (>=0.28.1,<0.29.0)",
-    "pytest (>=9.0.2,<10.0.0)",
-    "kafka-python (>=2.3.0,<3.0.0)",
-    "dotenv (>=0.9.9,<0.10.0)"
-]
+authors = ["Виктор Лобынцев <sibfight@mail.ru>"]
+package-mode = false
 
+[tool.poetry.dependencies]
+python = "^3.13"
+httpx = "^0.28.1"
+pytest = "^9.0.2"
+kafka-python = "^2.3.0"
+pydantic-settings = "^2.7.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
