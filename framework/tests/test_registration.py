@@ -1,14 +1,18 @@
+from framework.helpers.account_helper import AccountHelper
 from framework.helpers.kafka.consumers.register_events import RegisterEventsSubscribers
 from framework.helpers.kafka.consumers.register_events_errors import RegisterEventsErrorsSubscribers
 from framework.helpers.kafka.publishers.register_events import RegisterEventsPublisher
 from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
-from framework.tests.conftest import account_helper
+from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
+from framework.internal.http.models.ErrorMessage import ErrorMessage
+from framework.internal.http.models.RmqMessageMailBody import RmqMessageMailBody
+from framework.internal.http.models.UserPayload import UserPayload
 
 
 def test_failed_registration_validation_error(
         register_events_subscriber: RegisterEventsSubscribers,
         register_events_error_subscriber: RegisterEventsErrorsSubscribers,
-        account_helper
+        account_helper: AccountHelper
 ) -> None:
     login = "string"
     email = "string@mail.ru"
@@ -24,8 +28,8 @@ def test_failed_registration_validation_error(
 
 def test_success_registration(
         register_events_subscriber: RegisterEventsSubscribers,
-        prepare_user,
-        account_helper,
+        account_helper: AccountHelper,
+        prepare_user: UserPayload,
 ) -> None:
     user = prepare_user
     account_helper.register_user(login=user["login"], email=user["email"], password=user["password"])
@@ -34,7 +38,9 @@ def test_success_registration(
 
 
 def test_success_registration_with_kafka(
-    register_events_publisher: RegisterEventsPublisher, prepare_user, account_helper
+        register_events_publisher: RegisterEventsPublisher,
+        account_helper: AccountHelper,
+        prepare_user: UserPayload,
 ) -> None:
     msg = prepare_user
     register_events_publisher.send(msg=msg)
@@ -42,9 +48,9 @@ def test_success_registration_with_kafka(
 
 
 def test_register_events_error_consumer(
-    register_events_errors_publisher: RegisterEventsErrorsPublisher,
-    prepare_error_validation,
-    account_helper
+        register_events_errors_publisher: RegisterEventsErrorsPublisher,
+        prepare_error_validation: ErrorMessage,
+        account_helper: AccountHelper
 ) -> None:
     msg = prepare_error_validation
     register_events_errors_publisher.send(msg=msg)
@@ -54,16 +60,17 @@ def test_register_events_error_consumer(
 
 
 def test_success_registration_with_kafka_producer(
-    register_events_publisher: RegisterEventsPublisher, prepare_user
+        register_events_publisher: RegisterEventsPublisher,
+        prepare_user: UserPayload
 ) -> None:
     msg = prepare_user
     register_events_publisher.send(msg=msg)
 
 
 def test_success_registration_with_kafka_producer_consumer(
-    register_events_subscriber: RegisterEventsSubscribers,
-    prepare_user,
-    register_events_publisher: RegisterEventsPublisher
+        register_events_subscriber: RegisterEventsSubscribers,
+        register_events_publisher: RegisterEventsPublisher,
+        prepare_user: UserPayload,
 ) -> None:
     msg = prepare_user
     register_events_publisher.send(msg=msg)
@@ -76,9 +83,9 @@ def test_success_registration_with_kafka_producer_consumer(
 
 
 def test_validation_msg_register_events_errors(
-    register_events_error_subscriber: RegisterEventsErrorsSubscribers,
-    register_events_errors_publisher: RegisterEventsErrorsPublisher,
-    prepare_error_msg_register_events_error
+        register_events_error_subscriber: RegisterEventsErrorsSubscribers,
+        register_events_errors_publisher: RegisterEventsErrorsPublisher,
+        prepare_error_msg_register_events_error
 ) -> None:
     msg = prepare_error_msg_register_events_error
     login = msg["input_data"]["login"]
@@ -86,3 +93,13 @@ def test_validation_msg_register_events_errors(
 
     error_msg = register_events_error_subscriber.find_message(login=login, error_type="validation")
     assert error_msg.value["error_type"] == "validation"
+
+
+def test_rmq(
+        prepare_rmq_message_mail: RmqMessageMailBody,
+        dm_mail_sending: DmMailSendingPublisher,
+        account_helper: AccountHelper
+) -> None:
+    msg = prepare_rmq_message_mail
+    dm_mail_sending.publish(message=msg)
+    account_helper.find_msg(msg["address"])

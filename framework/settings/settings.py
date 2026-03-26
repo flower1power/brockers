@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     topic_register_events_errors: str = Field(
         default="register-events-errors", description="Kafka topic for registration error events"
     )
+    rmq_publisher_url: str = Field(..., description="Rmq publisher url")
+    dm_mail_sending_exchange: str = Field(default="dm.mail.sending", description="Rmq mail sending exchange")
 
 
 settings = Settings()
