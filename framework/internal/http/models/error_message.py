@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from framework.internal.http.models.UserPayload import UserPayload
+from framework.internal.http.models.user_payload import UserPayload
 
 
 class ErrorMessageBody(TypedDict):

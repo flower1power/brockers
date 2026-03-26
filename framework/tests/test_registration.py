@@ -5,9 +5,9 @@ from framework.helpers.kafka.publishers.register_events import RegisterEventsPub
 from framework.helpers.kafka.publishers.register_events_errors import RegisterEventsErrorsPublisher
 from framework.helpers.rmq.consumers.dm_mail_sending import DmMailSendingConsumer
 from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
-from framework.internal.http.models.ErrorMessage import ErrorMessage
-from framework.internal.http.models.RmqMessageMailBody import RmqMessageMailBody
-from framework.internal.http.models.UserPayload import UserPayload
+from framework.internal.http.models.error_message import ErrorMessage
+from framework.internal.http.models.rmq_message_mail_body import RmqMessageMailBody
+from framework.internal.http.models.user_payload import UserPayload
 
 
 def test_failed_registration_validation_error(

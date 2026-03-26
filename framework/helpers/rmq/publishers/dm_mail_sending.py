@@ -3,10 +3,5 @@ from framework.settings import settings
 
 
 class DmMailSendingPublisher(BasePublisher):
-    @property
-    def exchange(self) -> str:
-        return settings.dm_mail_sending_exchange
-
-    @property
-    def routing_key(self) -> str:
-        return ""
+    exchange = settings.dm_mail_sending_exchange
+    routing_key = ""

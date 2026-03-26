@@ -12,9 +12,9 @@ from framework.helpers.rmq.consumers.dm_mail_sending import DmMailSendingConsume
 from framework.helpers.rmq.publishers.dm_mail_sending import DmMailSendingPublisher
 from framework.internal.http.account.account import AccountApi
 from framework.internal.http.mail.mail import MailApi
-from framework.internal.http.models.ErrorMessage import ErrorMessage
-from framework.internal.http.models.RmqMessageMailBody import RmqMessageMailBody
-from framework.internal.http.models.UserPayload import UserPayload
+from framework.internal.http.models.error_message import ErrorMessage
+from framework.internal.http.models.rmq_message_mail_body import RmqMessageMailBody
+from framework.internal.http.models.user_payload import UserPayload
 from framework.internal.kafka.consumer import Consumer
 from framework.internal.kafka.producer import Producer
 from framework.internal.rmq.publisher import RmqPublisher
