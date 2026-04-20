@@ -2,6 +2,7 @@ import json
 import threading
 import time
 from collections import defaultdict
+from types import TracebackType
 
 from kafka import KafkaConsumer
 
@@ -20,6 +21,19 @@ class Consumer(Singleton):
         self._ready = threading.Event()
         self._thread: threading.Thread | None = None
         self._watchers: dict[str, list[Subscriber]] = defaultdict(list)
+
+    def __enter__(self):
+        self.register()
+        self.start()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: type[BaseException],
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None
+    ):
+        self.stop()
 
     def register(self):
         if self._subscribers is None:
@@ -91,11 +105,3 @@ class Consumer(Singleton):
         self._started = False
 
         print("Consumer stop")
-
-    def __enter__(self):
-        self.register()
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
